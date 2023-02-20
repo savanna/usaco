@@ -8,16 +8,21 @@
 #include <map>
 #include <algorithm>
 
-#define TESTING false
+//#define TESTING false
 
 #ifdef TESTING
 constexpr bool is_testing = true;
-const char *test_input = R"(5 2
-101
-85
-100
-46
-95
+const char *test_input = R"(10 5
+22
+22
+22
+22
+22
+22
+22
+22
+22
+8
 )";
 
 std::stringstream io(test_input);
@@ -82,15 +87,12 @@ int main() {
   if (last_jump) {
       // fill the gap
       gaps[previous_cow_round -1] += 1;
-
-      // record the last continuation
-      int connected_round = start_round - previous_cow_round + 1;
-      connected_years.push_back(connected_round);
-      total_connected_rounds += connected_round;
-
-      // start a new round
-      start_round = current_round;
   }
+
+  // record the last continuation
+  int connected_round = start_round - previous_cow_round + 1;
+  connected_years.push_back(connected_round);
+  total_connected_rounds += connected_round;
 
   int total_jumps = connected_years.size() + (last_jump ? 1 : 0);
 
