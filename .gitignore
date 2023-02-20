@@ -1,0 +1,5 @@
+.cache/
+Makefile
+cmake_install.cmake
+test
+test.out
