@@ -1,21 +1,26 @@
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <tuple>
+#include <unordered_map>
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <unordered_set>
 
-//#define TESTING
+#define TESTING
 
 #ifdef TESTING
-const char *test_input = R"(3
-57 120 87
-200 100 150
-2 141 135
+const char *test_input = R"(5 4
+1 3
+1 2
+2 3
+2 4
 )";
 
 std::stringstream io(test_input);
@@ -24,83 +29,77 @@ std::stringstream io(test_input);
 std::istream& io = std::cin;
 #endif
 
-int64_t GetNumber(int N, int grass[][1000], int limit) {
-  std::map<int, std::vector<int>> x_y;
-
-  // find all the ones that's smaller than 100
-  for (int y=0; y < N; ++y) {
-    for (int x = 0; x < N; ++x) {
-      io >> grass[x][y];
-      if (grass[x][y] < limit) {
-        x_y[x].push_back(y);
-      }
-    }
-  }
-  for (int x = 0; x < N; ++x) {
-    std::make_heap(x_y[x].begin(), x_y[x].end(), std::greater{});
-  }
-
-  int64_t total = 0;
-  // go throw each top left point and calculate the number of subsets
-  for (int y=0; y < N; ++y) {
-    auto x_y_head = x_y.begin();
-    for (int x = 0; x < N; ++x) {
-      if (grass[x][y] < limit) {
-        continue;
-      }
-
-      int start_x = x;
-      int end_y = N;
-
-      while(x_y_head != x_y.end() && start_x > x_y_head->first) {
-        x_y_head++;
-      }
-
-      if (x_y_head == x_y.end()) {
-        // pass the last x point, all remaining x and y are available.
-        total += end_y * (N - start_x);
-        continue;
-      }
-
-      auto current_x_y_head = x_y_head;
-      while(current_x_y_head != x_y.end()) {
-        if (start_x <= current_x_y_head->first) {
-          // ignore points that have smaller y, because we won't hit it
-          while (!current_x_y_head->second.empty() && current_x_y_head->second.front() < y) {
-            std::pop_heap(current_x_y_head->second.begin(), current_x_y_head->second.end(), std::greater{});
-            current_x_y_head->second.pop_back();
-          }
-          if (current_x_y_head->second.empty()) {
-            current_x_y_head++;
-            continue;
-          }
-
-          // new limit on x
-          total += (end_y - y) * (current_x_y_head->first - start_x);
-          start_x = current_x_y_head->first;
-
-          // new limit on y
-          end_y = std::min(end_y, current_x_y_head->second.front());
-
-          current_x_y_head++;
-        }
-      }
-      // add the last batch
-      // new limit on x = N
-      total += (end_y - y) * (N - start_x);
-    }
-  }
-
-  return total;
-}
 
 int main() {
-  int N;
-  io >> N;
+  int N, K;
+  io >> N >> K;
 
-  int grass[1000][1000];
-  int64_t number = GetNumber(N, grass, 100) - GetNumber(N, grass, 101);
-  std::cout << number << std::endl;
+  constexpr size_t kLimit = 100'000;
+
+  std::unordered_set<int> position_set[kLimit];
+  int positions[kLimit];
+
+  std::unordered_set<int> cow_touched;
+  int previous_cow_touched = 0;
+  bool is_new = true;
+
+  std::pair<int, int> moves[2*kLimit];
+
+  // read all the moves
+  for(int k = 0; k < K; ++k) {
+    io >> moves[k].first >> moves[k].second;
+    moves[k].first -= 1;
+    moves[k].second -= 1;
+  }
+
+  // initialize the possitions
+  for (int n = 0; n < N; ++n) {
+    positions[n] = n;
+    position_set[n].insert(n);
+  }
+
+  // go through it once
+  for(int k = 0; k < K; ++k) {
+    auto& m = moves[k];
+
+    int cow_first = positions[m.first];
+    int cow_second = positions[m.second];
+
+    cow_touched.insert(cow_first);
+    cow_touched.insert(cow_second);
+
+    is_new = is_new || position_set[cow_first].count(m.second) || position_set[cow_second].count(m.first);
+
+    position_set[cow_first].insert(m.second);
+    position_set[cow_second].insert(m.first);
+  }
+
+  // continue when there are new position showing up or there are new cows being touched.
+  while (is_new || previous_cow_touched < cow_touched.size()) {
+    is_new = false;
+    previous_cow_touched = cow_touched.size();
+    for(int k = 0; k < K; ++k) {
+      auto& m = moves[k];
+
+      int cow_first = positions[m.first];
+      int cow_second = positions[m.second];
+
+      cow_touched.insert(cow_first);
+      cow_touched.insert(cow_second);
+
+      is_new = is_new || !position_set[cow_first].count(m.second) || !position_set[cow_second].count(m.first);
+
+      position_set[cow_first].insert(m.second);
+      position_set[cow_second].insert(m.first);
+
+      std::swap(positions[m.first], positions[m.second]);
+    }
+  }
+
+  for (int n = 0; n < N; ++n) {
+    std::cout << position_set[n].size() << std::endl;
+  }
+
   return 0;
 }
 
