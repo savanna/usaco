@@ -27,15 +27,18 @@ int main() {
 //#define TESTING
 
 #ifdef TESTING
-//  const char *test_input = R"(7 4 7
-//1 2
-//2 3
-//3 4
-//4 5
-//)";
-  const char *test_input = R"(7 2 2
-2 5
-3 7
+  const char *test_input = R"(11
+1 -3
+0 -2
+0 -1
+0 1
+0 0
+1 0
+-1 0
+2 0
+-2 0
+3 0
+-3 0
 )";
 
   std::stringstream in(test_input);
@@ -46,8 +49,8 @@ int main() {
 #define USING_FILE
 
 #ifdef USING_FILE
-  std::string input_file = "swap.in";
-  std::string output_file = "swap.out";
+  std::string input_file = "triangles.in";
+  std::string output_file = "triangles.out";
   std::ofstream out;
   out.open(output_file);
   std::ifstream in;
@@ -60,78 +63,83 @@ int main() {
 #endif
 #endif
 
-  constexpr int kLimit = 100'999;
+  struct P {
+    P(int x, int y): x(x), y(y) {};
 
-  // cows and their positions.
-  std::array<int, kLimit> cows;
-
-  std::vector<std::pair<int, int>> moves;
-
-  int N, M, K;
-  in >> N >> M >> K;
-
-  for (int i = 0; i < M; i++) {
     int x, y;
-    in >> x >> y;
-    moves.push_back({x -1, y -1});
-  }
+    // prefix sum for all 4 directions.
+    int64_t top = 0;
+    int64_t right = 0;
+    int64_t bottom = 0;
+    int64_t left = 0;
+  };
 
-  std::array<int, kLimit> parent;
-  std::array<int, kLimit> repeat_values;
-  std::unordered_map<int, std::vector<int>> repeat_map;
+  constexpr int kLimit = 10;
+
+  std::vector<P> points;
+  std::map<int, std::vector<int>> same_x_points;
+  std::map<int, std::vector<int>> same_y_points;
+
+  int N;
+  in >> N;
+
   for (int i = 0; i < N; i++) {
-    cows[i] = i;
-    parent[i] = -1;
-    repeat_values[i] = -1;
+    int x,y;
+    in >> x >> y;
+    points.push_back({x, y});
+
+    same_x_points[x].push_back(i);
+    same_y_points[y].push_back(i);
   }
 
-  // get the initial transformation.
-  for (int i = 0; i < M; i++) {
-    std::reverse(cows.begin() + moves[i].first, cows.begin() + moves[i].second + 1);
-  }
+  for (auto xi : same_x_points) {
+    std::sort(xi.second.begin(), xi.second.end(), [&](int l, int r) {
+        return points[l].y < points[r].y;
+        });
 
-  for (int n = 0; n < N; n++) {
-    int repeat = 0;
-    int p = parent[n];
-    if (p>=0){
-      continue;
+    // skip the first point, it has prefix sum 0
+    for (int i = 1; i < xi.second.size(); i++) {
+      auto& current = points[xi.second[i]];
+      auto& previous = points[xi.second[i-1]];
+
+      current.bottom += previous.bottom + i*(current.y - previous.y);
     }
 
-    int current_position = n;  // n is starting position
-    std::vector<int> repeat_list;
-    repeat_list.push_back(n);
-    while(true) {
-      current_position = cows[current_position];
-      repeat++;
+    for (int i = xi.second.size() - 2; i >= 0; i--) {
+      auto& current = points[xi.second[i]];
+      auto& previous = points[xi.second[i+1]];
 
-      if (current_position == n) {
-        parent[n] = n;
-        repeat_values[n] = repeat;
-        repeat_map.emplace(n, std::move(repeat_list));
-        break;
-      } else {
-        parent[current_position] = n;
-        repeat_values[current_position] = repeat;
-        repeat_list.push_back(current_position);
-      }
+      current.top += previous.top + (xi.second.size() - 1 - i)*(previous.y - current.y);
     }
   }
 
-  // for each cow, try loop through the positions we just got, and stop as soon as it repeats.
-  for (int n = 0; n < N; n++) {
-    int repeat = 0;
-    int repeat_offset = 0;
-    int p = parent[n];
-    assert(p == parent[p]);
-    repeat = repeat_values[p];
-    if (p != n) {
-      repeat_offset = repeat_values[n];
+  for (auto xi : same_y_points) {
+    std::sort(xi.second.begin(), xi.second.end(), [&](int l, int r) {
+        return points[l].x < points[r].x;
+        });
+
+    // skip the first point, it has prefix sum 0
+    for (int i = 1; i < xi.second.size(); i++) {
+      auto& current = points[xi.second[i]];
+      auto& previous = points[xi.second[i-1]];
+
+      current.left += previous.left + i*(current.x - previous.x);
     }
 
-    int i = K%repeat;
-    int current_position = repeat_map[p][(i + repeat_offset)%repeat];
+    for (int i = xi.second.size() - 2; i >= 0; i--) {
+      auto& current = points[xi.second[i]];
+      auto& previous = points[xi.second[i+1]];
 
-    out << current_position + 1 << std::endl;
+      current.right += previous.right + (xi.second.size() - 1 - i)*(previous.x - current.x);
+    }
   }
+
+  int64_t total = 0;
+  for (auto p : points) {
+    total += (p.left + p.right) * (p.top + p.bottom);
+    total = total % (1000'000'007);
+  }
+
+  out << total % (1000'000'007) << std::endl;
 }
 
