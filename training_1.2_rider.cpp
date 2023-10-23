@@ -29,7 +29,7 @@ using namespace std;
 
 
 int main() {
-#define TESTING
+//#define TESTING
 
 #ifdef TESTING
   const char *test_input = R"(COMETQ
