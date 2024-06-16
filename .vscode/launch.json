@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug",
+            "program": "${workspaceFolder}/a.out",
+            "args": [],
+            "initCommands": [
+                "platform shell -t 100 -- /usr/bin/g++ -g ${file}",
+            ],
+            "preRunCommands": [
+                "platform shell -t 100 -- /usr/bin/g++ -g ${file}",
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+    ]
+}
