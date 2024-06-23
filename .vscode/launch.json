@@ -8,11 +8,12 @@
             "program": "${workspaceFolder}/a.out",
             "args": [],
             "initCommands": [
+                "platform shell -t 100 -- rm ${workspaceFolder}/a.out",
                 "platform shell -t 100 -- /usr/bin/g++ -g ${file}",
             ],
             "preRunCommands": [
-                "platform shell -t 100 -- /usr/bin/g++ -g ${file}",
-            ],
+
+             ],
             "cwd": "${workspaceFolder}"
         },
     ]
